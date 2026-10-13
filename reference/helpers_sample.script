@@ -1,0 +1,104 @@
+launchApp "chrome","launchApp","search"
+moveTo text:"computers"
+ClickElement "Desktops"
+scrollTo "Add to cart"
+IsElementPresentOnScreen "Digital strome"
+click item 2 of EveryImageLocation(text:"Add to cart")
+IsElementPresentOnScreen "the product has been added"
+
+to launchApp browser,url,textToSearch,SR
+	if SR is not a list then put "Properties/sections"().searchAreas.(SR) into SR
+	waitfor 200,image:"WindowsStart_icon"
+	Typetext windowsKey,"r"
+	waitfor 30,image:"runicon"
+	Typetext browser&&" "&&url
+	Typetext return
+	if textToSearch is not empty then
+		IsElementPresentOnScreen textToSearch,SR
+	end if
+end launchApp
+
+
+
+to Success SuccessMsg
+	LogSuccess SuccessMsg	
+end Success
+
+to Error ErrorMsg
+	CaptureScreenshot ErrorMsg
+	LogError ErrorMsg
+end Error
+
+to handle ClickElement textLabel,SearchRectangle:[0,0,1920,1080], waitTime:4
+	if file (suiteinfo().imagesFolder&"/"&label) exists then set text to "Image"
+	if SR is not a list then put "Properties/sections"().searchAreas.(SR) into SR
+	If ImageFound((text):textLabel, waitFor:waitTime,SearchRectangle:SR) then
+		click FoundImageLocation()
+		Success "Element Clicked successfully:---- "&&textLabel
+	else if ImageFound((text):textLabel, waitFor:1,contrast:on,SearchRectangle:SR) then
+		click FoundImageLocation()
+		Success "Element Clicked successfully:---- "&&textLabel
+	else 
+		put "Unable to find the image:---- "&&textLabel into ErrorMsg
+		Error ErrorMsg
+	End if
+end ClickElement
+
+to scrollTo toFind, SR , scroll:"Down",scrollSpeed:3
+	// Images 
+	if SR is not a list then put "Properties/sections"().searchAreas.(SR) into SR
+	set the remoteWorkInterval to 0.1
+	if file (suiteinfo().imagesFolder&"/"&toFind&".png") exists
+		repeat until imagefound(0,image:toFind,searchRectangle:SR)
+			ScrollWheelDown scrollSpeed
+			wait 1
+			if repeatindex() > 10 then 
+				logerror "Cannot find"&&toFind
+				Exit repeat
+			end if
+		end repeat
+	else
+		// OCR
+		repeat until imagefound(waitfor:0,text:toFind,searchRectangle:SR, ignoreNewlines:on, ignorespaces:on)
+			log the textstyle
+			if scroll equal to "UP" then
+				ScrollWheelUp scrollSpeed
+			else
+				ScrollWheelDown scrollSpeed
+			end if
+			wait 1
+			if repeatindex() > 10 then 
+				logerror "Cannot find"&&toFind
+				Exit repeat
+			end if
+		end repeat
+	end if
+	set the remoteWorkInterval to 0.4
+	return foundimageinfo().imageRectangle 
+end scrollTo
+
+to handle IsElementPresentOnScreen textToSearch,SR:[0,0,1920,1080],waitTime:5
+	if file (suiteinfo().imagesFolder&"/"&label) exists then set text to "Image"
+	if SR is not a list then put "Properties/sections"().searchAreas.(SR) into SR
+	If ImageFound(text:textToSearch,SearchRectangle:SR, waitFor:waitTime,caseSensitive:on) then
+		put FoundImageLocation() into loc
+		Success "Text "&&textToSearch&&" Is present on the screen"
+		return loc
+	else if ImageFound(text:textToSearch,SearchRectangle:SR,contrast:on, waitFor:5) then
+		put FoundImageLocation() into loc
+		Success "Text "&&textToSearch&&" Is present on the screen"
+		return loc
+	else if ImageFound(text:textToSearch,SearchRectangle:SR, contrast:"On", contrastColor:"#F7F3F7", contrastTolerance:"45", dpi:"144",waitFor:5) then
+		put FoundImageLocation() into loc
+		Success "Text "&&textToSearch&&" Is present on the screen"
+		return loc
+	else if ImageFound(text:textToSearch,SearchRectangle:SR, contrast:"On", contrastColor:"#F7F3F7", contrastTolerance:"45", dpi:"144",validwords:textToSearch,waitFor:5) then
+		put FoundImageLocation() into loc
+		Success "Text "&&textToSearch&&" Is present on the screen"
+		return loc
+	else 
+		put "Text "&&textToSearch&&" Is not present on the screen" into ErrorMsg
+		Error ErrorMsg
+	End if
+end IsElementPresentOnScreen
+
